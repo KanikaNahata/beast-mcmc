@@ -6,7 +6,6 @@ import dr.inference.model.Parameter;
 import dr.xml.*;
 
 
-
 public class EpochParser extends AbstractXMLObjectParser {
     public static final String GROUP_SIZES = "groupSizes";
     public static final String INTERVALS = "intervals";
@@ -21,14 +20,18 @@ public class EpochParser extends AbstractXMLObjectParser {
     public Object parseXMLObject(XMLObject xo) throws XMLParseException {
 
         // false no implemented yet but would be like skygrid but with root behind cutoff and last epoch defined as cutoff to root
-        boolean fixedEpoch = xo.getAttribute(FIXED_EPOCH, true);
+//        boolean fixedEpoch = xo.getAttribute(FIXED_EPOCH, true);
 
         XMLObject cxo = xo.getChild(GROUP_SIZES);
         Parameter groupParameter = null;
         if (cxo != null) {
             groupParameter = (Parameter) cxo.getChild(Parameter.class);
         }
-        IntervalList intervalList = xo.getChild(IntervalList.class) == null ? (IntervalList) xo.getChild(IntervalList.class) : null;
+        IntervalList intervalList = null;
+        if (xo.getChild(INTERVALS) != null) {
+            cxo = xo.getChild(INTERVALS);
+            intervalList = (IntervalList) cxo.getChild(IntervalList.class);
+        }
 
         Parameter gridPoints = null;
         if (xo.getChild(GRID_POINTS) != null) {
@@ -48,31 +51,28 @@ public class EpochParser extends AbstractXMLObjectParser {
             cutOff = (Parameter) cxo.getChild(Parameter.class);
         }
 
-        Parameter rootHeightParameter =null;
+        Parameter rootHeightParameter = null;
         if (xo.getChild(ROOT_HEIGHT_PARAMETER) != null) {
             cxo = xo.getChild(ROOT_HEIGHT_PARAMETER);
             rootHeightParameter = (Parameter) cxo.getChild(Parameter.class);
         }
+
         EpochProvider epochProvider = null;
 
         if (gridPoints != null) {
-            if(rootHeightParameter!=null){
+            if (rootHeightParameter != null) {
                 epochProvider = new FlexibleRootGridEpoch(rootHeightParameter, gridPoints.getValues());
-            }else {
+            } else {
                 epochProvider = new FixedGridEpochProvider(gridPoints.getValues());
             }
         } else if (cutOff != null && numGridPoints != null) {
-            if(rootHeightParameter!=null){
+            if (rootHeightParameter != null) {
                 epochProvider = new FlexibleRootGridEpoch(rootHeightParameter, numGridPoints.getValue(0).intValue(), cutOff.getValue(0));
-            }else {
+            } else {
                 epochProvider = new FixedGridEpochProvider(numGridPoints.getValue(0).intValue(), cutOff.getValue(0));
             }
         } else if (intervalList != null) {
-            if (groupParameter == null) {
-                epochProvider = new SkyrideIntervalEpochProvider(intervalList);
-            } else {
-                epochProvider = new SkylineEpochProvider(intervalList, groupParameter);
-            }
+            epochProvider = new SkylineEpochProvider(intervalList, groupParameter);
         }
         return epochProvider;
     }
@@ -84,9 +84,8 @@ public class EpochParser extends AbstractXMLObjectParser {
     @Override
     public XMLSyntaxRule[] getSyntaxRules() {
         return new XMLSyntaxRule[]{
-                new OrRule(
-                        new OrRule(
-                        new OrRule(
+                new XORRule(
+                        new XORRule(
                                 new ElementRule(GRID_POINTS, new XMLSyntaxRule[]{
                                         new ElementRule(Parameter.class)
                                 }),
@@ -97,15 +96,14 @@ public class EpochParser extends AbstractXMLObjectParser {
                                                 new ElementRule(Parameter.class)
                                         }))
                         ),
-                        new ElementRule(IntervalList.class)
-                        ),
-                        new AndRule(new ElementRule(IntervalList.class),
+                        new AndRule(new ElementRule(INTERVALS, new XMLSyntaxRule[]{
+                                new ElementRule(IntervalList.class)
+                        }),
                                 new ElementRule(GROUP_SIZES, new XMLSyntaxRule[]{
                                         new ElementRule(Parameter.class)
                                 })
                         )
                 )
-
         };
     }
 

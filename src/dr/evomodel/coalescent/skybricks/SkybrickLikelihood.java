@@ -195,7 +195,6 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
 
             }
             demographic = getDemographicModel(currentEpoch);
-            currentEpochEndTime = epochProvider.getEpochEndTime(currentEpoch);
             currentEpochStartTime = epochProvider.getEpochStartTime(currentEpoch);
             sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentEpochStartTime,currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
             if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
@@ -258,12 +257,17 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
     }
 
     private SkyBrickDemographicModel getDemographicModel(int epoch){
-        SkyBrickDemographicModel demographicModel;
-        if(epoch == epochProvider.getEpochCount()-1 && epochProvider instanceof FixedGridEpochProvider){ // last epoch is always constant
-            demographicModel = new Constant();
-            return demographicModel;
+
+        if(!(demographicModel instanceof Constant)) {
+
+            SkyBrickDemographicModel demographicModel;
+            if (epoch == epochProvider.getEpochCount() - 1 && epochProvider instanceof FixedGridEpochProvider) { // last epoch is always constant
+                demographicModel = new Constant();
+                return demographicModel;
+            }
+            // only need to scale for nonConstant population sizes
+            this.demographicModel.setup(popSizeParameter.getParameterValue(epoch), popSizeParameter.getParameterValue(epoch + 1), epochProvider.getEpochDuration(epoch));
         }
-        this.demographicModel.setup(popSizeParameter.getParameterValue(epoch),popSizeParameter.getParameterValue(epoch+1),epochProvider.getEpochDuration(epoch));
 
         return this.demographicModel;
 

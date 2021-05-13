@@ -12,13 +12,15 @@ public class SkyRateParameter extends Parameter.Abstract implements VariableList
     public SkyRateParameter(Parameter popSizes, EpochProvider epochs) {
         this.popSizes = popSizes;
         popSizes.addVariableListener(this);
-        dimension = epochs.getEpochCount();
+
         epochProvider = epochs;
         // TODO figure out how to wrap all this up
         if (epochProvider instanceof Model) {
             ((Model) epochProvider).addModelListener(this);
         }
         lastFlat = epochProvider instanceof FixedGridEpochProvider;
+        dimension = lastFlat? epochs.getEpochCount(): epochs.getEpochCount()-1;
+
         bounds  = new DefaultBounds(Double.NEGATIVE_INFINITY,Double.POSITIVE_INFINITY,dimension);
     }
 
