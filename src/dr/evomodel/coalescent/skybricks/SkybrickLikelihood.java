@@ -137,7 +137,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
 
         if (currentEpoch < maxEpoch) {
 
-            while (currentAndNextTime[1] < currentEpochEndTime) {
+            while (currentAndNextTime[1] <= currentEpochEndTime) { // epochs are inclusive
 
                 //check to see if interval ends with coalescent event
                 //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
@@ -160,7 +160,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                 currentEpochEndTime = epochProvider.getEpochEndTime(currentEpoch);
                 currentEpochStartTime = epochProvider.getEpochStartTime(currentEpoch);
 
-                if (currentAndNextTime[1] >= currentEpochEndTime) {
+                if (currentAndNextTime[1] > currentEpochEndTime) {
                     sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentEpochStartTime, currentEpochEndTime) * numLineages * (numLineages - 1) * 0.5;
                     currentEpoch++;
 
@@ -176,7 +176,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                     // numLineages = intervalsList.get(i).getLineageCount(currentTimeIndex + 1);
                     numLineages = intervalsList.getLineageCount(currentTimeIndex);
 
-                    while (currentAndNextTime[1] < currentEpochEndTime && currentTimeIndex < intervalsList.getIntervalCount()) {
+                    while (currentAndNextTime[1] <= currentEpochEndTime && currentTimeIndex < intervalsList.getIntervalCount()) {
                         //check to see if interval ends with coalescent event
                         //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                         if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
