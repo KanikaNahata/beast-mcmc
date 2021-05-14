@@ -25,14 +25,13 @@ public class FixedGridEpochProvider extends EpochProvider.Abstract {
         super(FIXED_GRID_EPOCH);
 
         boolean needInf = grid[grid.length-1]!=Double.POSITIVE_INFINITY;
-        List<Double> gridList =  Arrays.asList(grid);
-        if(needInf){
-            gridList.add(Double.POSITIVE_INFINITY);
-        }
 
-        gridPoints =  new double[gridList.size()];
-        for(int i = 0; i < gridList.size(); i++){
-            gridPoints[i] = gridList.get(i);
+        gridPoints = needInf? new double[grid.length+1]:new double[grid.length] ;
+        for(int i = 0; i < grid.length; i++){
+            gridPoints[i] = grid[i];
+        }
+        if(needInf){
+            gridPoints[gridPoints.length-1]=Double.POSITIVE_INFINITY;
         }
         epochCount = gridPoints.length;
         epochsKnown=true;
