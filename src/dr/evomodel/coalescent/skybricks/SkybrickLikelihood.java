@@ -24,6 +24,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
     private final IntervalList intervalsList;
 
     private final double[] sufficientStatistics;
+    private final double[] demographicCoalescent;
     private final double[] numCoalEvents;
 
     protected int numEpochs;
@@ -53,6 +54,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
         numEpochs = this.epochProvider.getEpochCount();
         this.numCoalEvents = new double[numEpochs];
         this.sufficientStatistics = new double[numEpochs];
+        this.demographicCoalescent = new double[numEpochs];
 
         if(epochProvider instanceof FixedGridEpochProvider ){
             if(popSizeParameter.getDimension()!=numEpochs){
@@ -89,9 +91,12 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
         double currentLike = 0;
         double[] currentGamma = popSizeParameter.getParameterValues();
 
-        for (int i = 0; i < numEpochs; i++) {
-            currentLike += -numCoalEvents[i] * currentGamma[i] - sufficientStatistics[i] * Math.exp(-currentGamma[i]);
+        int diff = demographicModel instanceof Exponential?1:0;
+        for (int i = 0; i < numEpochs-1; i++) {
+            currentLike += -numCoalEvents[i] * currentGamma[i+diff] -demographicCoalescent[i] - sufficientStatistics[i] * Math.exp(-currentGamma[i+diff]);
         }
+        currentLike += -numCoalEvents[numEpochs-1] * currentGamma[numEpochs-1] - sufficientStatistics[numEpochs-1] * Math.exp(-currentGamma[numEpochs-1]);
+
 
         return currentLike;
 
@@ -101,6 +106,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
 
         Arrays.fill(numCoalEvents, 0.0);
         Arrays.fill(sufficientStatistics, 0.0);
+        Arrays.fill(demographicCoalescent, 0.0);
 //        Arrays.fill(ploidySums, 0);
         //index of smallest grid point greater than at least one sampling/coalescent time in current tree
         int minEpoch;
@@ -142,7 +148,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                 //check to see if interval ends with coalescent event
                 //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                 if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                    numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
+                    numCoalEvents[currentEpoch] += 1;
+                    demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
                 }
                 sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentAndNextTime[0], currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
                 currentTimeIndex++;
@@ -169,8 +176,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                     //check to see if interval ends with coalescent event
                     //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                     if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                        numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
-                    }
+                        numCoalEvents[currentEpoch] += 1;
+                        demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);                    }
                     currentTimeIndex++;
                     currentTimeIndex = moveToNextTimeIndex(currentTimeIndex, currentAndNextTime);
                     // numLineages = intervalsList.get(i).getLineageCount(currentTimeIndex + 1);
@@ -180,8 +187,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                         //check to see if interval ends with coalescent event
                         //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                         if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                            numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
-                        }
+                            numCoalEvents[currentEpoch] += 1;
+                            demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);                        }
                         sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentAndNextTime[0], currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
                         currentTimeIndex++;
                         currentTimeIndex = moveToNextTimeIndex(currentTimeIndex, currentAndNextTime);
@@ -198,7 +205,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
             currentEpochStartTime = epochProvider.getEpochStartTime(currentEpoch);
             sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentEpochStartTime,currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
             if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
+                numCoalEvents[currentEpoch] += 1;
+                demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
             }
 
             currentTimeIndex++;
@@ -212,7 +220,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
 
                 //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                 if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                    numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
+                    numCoalEvents[currentEpoch] += 1;
+                    demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
                 }
                 sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentAndNextTime[0], currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
                 currentTimeIndex++;
@@ -225,7 +234,8 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                 //check to see if interval ends with coalescent event
                 //if (intervalsList.get(i).getCoalescentEvents(currentTimeIndex + 1) > 0) {
                 if (intervalsList.getCoalescentEvents(currentTimeIndex) > 0) {
-                    numCoalEvents[currentEpoch] += demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
+                    numCoalEvents[currentEpoch] += 1;
+                    demographicCoalescent[currentEpoch]+= demographic.getCoalescentEventWeight(currentEpochStartTime, currentAndNextTime[1]);
                 }
                 sufficientStatistics[currentEpoch] = sufficientStatistics[currentEpoch] + demographic.getScaledInterval(currentEpochStartTime, currentAndNextTime[0], currentAndNextTime[1]) * numLineages * (numLineages - 1) * 0.5;
                 currentTimeIndex++;
@@ -266,7 +276,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                 return demographicModel;
             }
             // only need to scale for nonConstant population sizes
-            this.demographicModel.setup(popSizeParameter.getParameterValue(epoch), popSizeParameter.getParameterValue(epoch + 1), epochProvider.getEpochDuration(epoch));
+            this.demographicModel.setup(popSizeParameter.getParameterValue(epoch+1), popSizeParameter.getParameterValue(epoch), epochProvider.getEpochDuration(epoch));
         }
 
         return this.demographicModel;
@@ -352,7 +362,7 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                 return t1-t0;
             };
             public double getCoalescentEventWeight(double epochStateTime,double t){
-                return 1;
+                return 0;
             };
     }
 
@@ -361,10 +371,10 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
             public void setup(double logN0, double logN1, double time){
                 this.logN0 = logN0;
 
-                this.r = (logN0 - logN1) / time;
+                this.r = (logN1 - logN0) / time;
             }
             private double getScaledTime(double t){
-                return FastMath.exp(-r*t);
+                return FastMath.exp(r*t);
             }
 
             @Override
@@ -373,14 +383,14 @@ public class SkybrickLikelihood extends AbstractCoalescentLikelihood
                     return t1-t0;
                 }
                 // flipped to account for change of sign in exponential Log likelihood calculation compared to constant
-                return (getScaledTime(t0 - epochStateTime) - getScaledTime(t1 - epochStateTime))/r ;
+                return  (Math.exp((t1-epochStateTime)*r)-Math.exp((t0-epochStateTime)*r)) /r ;
             }
 
             public double getCoalescentEventWeight(double epochStateTime,double t){
-                if(logN0==0){
-                    return 1; //doesn't matter since will be made 0 in calculate likelihoood
+                if(r==0){
+                    return 0.0;
                 }
-                return (logN0 - (r * (t-epochStateTime)))/logN0 ;
+                return -1*(t-epochStateTime) * r;
             }
             private double logN0;
             private double r;
