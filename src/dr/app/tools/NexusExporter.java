@@ -42,6 +42,7 @@ import dr.evolution.sequence.Sequence;
 import dr.evolution.tree.NodeRef;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
+import dr.evomodel.branchratemodel.BranchRateModel;
 
 /**
  * @author Andrew Rambaut
@@ -147,6 +148,18 @@ public class NexusExporter implements TreeExporter {
         writeNexusTree(tree, treePrefix + 1, true, idMap);
         out.println("End;");
     }
+    /**
+     * Export a tree with (forced) branch rates
+     *
+     * @param tree the tree to export.
+     * @param branchRateModel additional branch rate model to export tree with annotated branch rates
+     */
+    public void exportAnnotatedTree(Tree tree, BranchRateModel branchRateModel) {
+        Map<String, Integer> idMap = writeNexusHeader(tree);
+        out.println("\t\t;");
+        writeAnnotatedNexusTree(tree, treePrefix + 1, true, idMap, branchRateModel);
+        out.println("End;");
+    }
 
     public void writeNexusTree(Tree tree, String s, boolean attributes, Map<String, Integer> idMap) {
         // PAUP marks rooted trees thou
@@ -184,6 +197,44 @@ public class NexusExporter implements TreeExporter {
                 + " = " + treeAttributes);
         
         writeNode(tree, tree.getRoot(), attributes, idMap);
+        out.println(";");
+    }
+    public void writeAnnotatedNexusTree(Tree tree, String s, boolean attributes, Map<String, Integer> idMap, BranchRateModel branchRateModel) {
+        // PAUP marks rooted trees thou
+        String treeAttributes = "[&R] ";
+
+        // Place tree level attributes in tree comment
+        StringBuilder treeComment = null;
+        {
+            Iterator<String> iter = tree.getAttributeNames();
+            if (iter != null) {
+                while (iter.hasNext()) {
+                    final String name = iter.next();
+                    final String value = tree.getAttribute(name).toString();
+
+                    if( name.equals("weight") ) {
+                        treeAttributes = treeAttributes + "[&W " + value + " ] ";
+                    }
+                    else {
+                        if( treeComment == null ) {
+                            treeComment = new StringBuilder(" [&");
+                        } else if( treeComment.length() > 2 ) {
+                            treeComment.append(", ");
+                        }
+
+                        treeComment.append(name).append("=").append(value);
+                    }
+                }
+                if( treeComment != null ) {
+                    treeComment.append("]");
+                }
+            }
+        }
+
+        out.print("tree " + s + ((treeComment != null) ? treeComment.toString() : "")
+                + " = " + treeAttributes);
+
+        writeAnnotatedNode(tree, tree.getRoot(), attributes, idMap, branchRateModel);
         out.println(";");
     }
 
@@ -278,6 +329,67 @@ public class NexusExporter implements TreeExporter {
                     out.print(name + "=");
                     Object value = tree.getNodeAttribute(node, name);
                     printValue(value);
+                }
+                out.print("]");
+            }
+        }
+
+        if (writeAttributesAs == AttributeType.NODE_ATTRIBUTES && !tree.isRoot(node)) {
+            out.print(":");
+        }
+
+        if (!tree.isRoot(node)) {
+            double length = tree.getBranchLength(node);
+            if (formatter != null) {
+                out.print(formatter.format(length));
+            } else {
+                out.print(length);
+            }
+        }
+    }
+
+
+    private void writeAnnotatedNode(Tree tree, NodeRef node, boolean attributes, Map<String, Integer> idMap, BranchRateModel branchRateModel) {
+        if (tree.isExternal(node)) {
+            int k = node.getNumber() + 1;
+            if (idMap != null) k = idMap.get(tree.getTaxonId(k - 1));
+
+            out.print(k);
+        } else {
+            out.print("(");
+            writeAnnotatedNode(tree, tree.getChild(node, 0), attributes, idMap, branchRateModel);
+            for (int i = 1; i < tree.getChildCount(node); i++) {
+                out.print(",");
+                writeAnnotatedNode(tree, tree.getChild(node, i), attributes, idMap, branchRateModel);
+            }
+            out.print(")");
+        }
+
+        if (writeAttributesAs == AttributeType.BRANCH_ATTRIBUTES && !tree.isRoot(node)) {
+            out.print(":");
+        }
+
+        if (attributes) {
+            Iterator<?> iter = tree.getNodeAttributeNames(node);
+            if (iter != null) {
+                boolean first = true;
+                while (iter.hasNext()) {
+                    if (first) {
+                        out.print("[&");
+                        first = false;
+                    } else {
+                        out.print(",");
+                    }
+                    String name = (String) iter.next();
+                    out.print(name + "=");
+                    if (tree.isRoot(node)){
+                        Object value = tree.getNodeAttribute(node, name);
+                        printValue(value);
+                    }
+                    else {
+                        double branchRate = branchRateModel.getBranchRate(tree, node);
+                        out.print(branchRate);
+                    }
                 }
                 out.print("]");
             }

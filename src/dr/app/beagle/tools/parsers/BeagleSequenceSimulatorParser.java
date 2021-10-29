@@ -46,6 +46,7 @@ public class BeagleSequenceSimulatorParser extends AbstractXMLObjectParser {
     public static final String PARALLEL = "parallel";
     public static final String OUTPUT_ANCESTRAL_SEQUENCES = "outputAncestralSequences";
     public static final String OUTPUT = "output";
+    public static final String ANNOTATE_TREE = "annotateTree";
 
     public String getParserName() {
         return BEAGLE_SEQUENCE_SIMULATOR;
@@ -166,6 +167,18 @@ public class BeagleSequenceSimulatorParser extends AbstractXMLObjectParser {
         SimpleAlignment alignment = s.simulate(parallel, outputAncestralSequences);
 
         alignment.setOutputType(output);
+
+        String annotateTree = null;
+        try {
+            if (xo.hasAttribute(ANNOTATE_TREE)) {
+                annotateTree = xo.getStringAttribute(ANNOTATE_TREE);
+            }
+            if (annotateTree != null) {
+                s.outputAnnotatedTree(annotateTree);
+            }
+        } catch (XMLParseException e) {
+            e.printStackTrace();
+        }
 
         return alignment;
     }// END: parseXMLObject

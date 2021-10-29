@@ -25,6 +25,8 @@
 
 package dr.app.beagle.tools;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -37,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import dr.app.bss.Utils;
+import dr.app.tools.NexusExporter;
 import dr.evolution.alignment.SimpleAlignment;
 import dr.evolution.datatype.DataType;
 import dr.evolution.sequence.Sequence;
@@ -255,7 +258,18 @@ public class BeagleSequenceSimulator {
 	public LinkedHashMap<Integer, LinkedHashMap<NodeRef, int[]>> getPartitionSequencesMap() {
 		return partitionSequencesMap;
 	}//END: getPartitionSequencesMap
-	
+
+	public void outputAnnotatedTree(String annotateTree){
+		try{
+			for (Partition partition : partitions) {
+				PrintStream outfile = new PrintStream(annotateTree);
+				NexusExporter ne = new NexusExporter(outfile);
+				ne.exportAnnotatedTree(partition.getTreeModel(), partition.getBranchRateModel());
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
 //	private Sequence intArray2Sequence(Taxon taxon, int[] seq, int gapFlag) {
 //
 //		StringBuilder sSeq = new StringBuilder();

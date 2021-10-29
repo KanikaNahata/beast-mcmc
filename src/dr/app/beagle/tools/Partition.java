@@ -586,6 +586,10 @@ public class Partition {
 		return alignmentMap;
 	}// END: getSequenceList
 
+	public BranchRateModel getBranchRateModel(){
+		return this.branchRateModel;
+	} // END: getBranchRateModel
+
 //	public LinkedHashMap<NodeRef, int[]> getSequenceMap() {
 //		return sequencesMap;
 //	}
