@@ -273,10 +273,10 @@ public class MarginalLikelihoodAnalysis {
         sb.append(" from ")
                 .append(traceName)
                 .append(" = ")
-                .append(String.format("%5.4f", getLogMarginalLikelihood()));
+                .append(String.format("%5.10f", getLogMarginalLikelihood()));
         if (bootstrapLength > 1) {
             sb.append(" +/- ")
-                    .append(String.format("%5.4f", getBootstrappedSE()));
+                    .append(String.format("%5.10f", getBootstrappedSE()));
         } else {
             sb.append("           ");
         }
