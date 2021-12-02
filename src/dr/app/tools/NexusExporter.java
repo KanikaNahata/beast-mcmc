@@ -155,6 +155,7 @@ public class NexusExporter implements TreeExporter {
      * @param branchRateModel additional branch rate model to export tree with annotated branch rates
      */
     public void exportAnnotatedTree(Tree tree, BranchRateModel branchRateModel) {
+        setSortedTranslationTable(true);
         Map<String, Integer> idMap = writeNexusHeader(tree);
         out.println("\t\t;");
         writeAnnotatedNexusTree(tree, treePrefix + 1, true, idMap, branchRateModel);
